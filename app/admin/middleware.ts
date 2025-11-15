@@ -4,28 +4,37 @@ import jwt from "jsonwebtoken";
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
+  const maintenance = req.cookies.get("maintenance")?.value === "true";
+  const pathname = req.nextUrl.pathname;
 
-  // ✅ Protect all /admin routes except login
-  if (req.nextUrl.pathname.startsWith("/admin") && req.nextUrl.pathname !== "/admin/login") {
+  // 🔐 ADMIN ROUTES
+  if (pathname.startsWith("/admin")) {
+    if (pathname === "/admin/login") return NextResponse.next();
+
     if (!token) {
       return NextResponse.redirect(new URL("/admin/login", req.url));
     }
 
     try {
-      // Verify JWT with your backend secret
-      jwt.verify(token, process.env.NEXT_PUBLIC_JWT_SECRET || "mysecret"); // must match your backend JWT secret
+      jwt.verify(token, process.env.NEXT_PUBLIC_JWT_SECRET || "mysecret");
     } catch (err) {
-      // ❌ Token expired or invalid
-      const loginUrl = new URL("/admin/login", req.url);
-      const res = NextResponse.redirect(loginUrl);
-      res.cookies.delete("token"); // clear invalid cookie
+      const res = NextResponse.redirect(new URL("/admin/login", req.url));
+      res.cookies.delete("token");
       return res;
     }
+
+    return NextResponse.next(); // Admin bypasses maintenance
   }
 
+  // 🌐 PUBLIC PAGES
+  if (maintenance && pathname !== "/maintenance") {
+    if (!pathname.startsWith("/admin")) {
+    return NextResponse.redirect(new URL("/maintenance", req.url));
+    }
+  
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/((?!api|_next|.*\\..*).*)"], // all public pages
 };
