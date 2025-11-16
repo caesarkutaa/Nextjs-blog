@@ -19,8 +19,8 @@ export const metadata = {
     "creative writing",
     "lifestyle",
   ],
-  metadataBase: new URL("https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev"), // ✅ replace with your real domain
-  authors: [{ name: "Krevv Team", url: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev" }],
+  metadataBase: new URL("https://krevv.com"), // ✅ replace with your real domain
+  authors: [{ name: "Krevv Team", url: "https://krevv.com" }],
   creator: "Krevv",
   publisher: "Krevv",
   robots: {
@@ -31,11 +31,11 @@ export const metadata = {
     title: "krevv — Guide Designed for Digital & Remote workers",
     description:
       "A guide built for remote professionals and creatives who want to thrive in a digital world.",
-    url: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev/",
+    url: "https://krevv.com",
     siteName: "krevv",
     images: [
       {
-        url: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev/krevv.png",
+        url: "https://krevv.com/krevv.png",
         width: 1200,
         height: 630,
         alt: "My Blog preview image",
@@ -50,10 +50,10 @@ export const metadata = {
     description:
       "A guide built for remote professionals and creatives who want to thrive in a digital world..",
     creator: "@yourhandle", // replace with your Twitter handle
-    images: ["https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev/krevv.png"],
+    images: ["https://krevv.com/krevv.png"],
   },
   alternates: {
-    canonical: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev",
+    canonical: "https://krevv.com",
   },
 };
 
