@@ -5,10 +5,14 @@ import CookieNotice from "../components/CookieNotice";
 import MaintenancePage from "../components/MaintenancePage"; 
 import { cookies } from "next/headers";
 
+
 export const metadata = {
   title: {
     default: "krevv — Guide Designed for Digital & Remote workers.",
     template: "%s | krevv",
+  },
+  icons:{
+    icon: "/newf.png",
   },
   description:
     "A guide built for remote professionals and creatives who want to thrive in a digital world.",
