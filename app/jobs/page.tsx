@@ -63,23 +63,30 @@ export default function JobsPage() {
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active`
       );
-      setJobs(res.data || []);
+      
+      // ✅ Extract data array from paginated response
+      const jobsData = res.data?.data || res.data || [];
+      
+      // ✅ Ensure it's an array before setting
+      setJobs(Array.isArray(jobsData) ? jobsData : []);
     } catch (err) {
       console.error("Error fetching jobs:", err);
+      setJobs([]); // ✅ Set empty array on error
     } finally {
       setLoading(false);
     }
   };
 
   const filterJobs = () => {
-    let filtered = jobs;
+    // ✅ Ensure jobs is an array before filtering
+    let filtered = Array.isArray(jobs) ? [...jobs] : [];
 
     if (searchTerm) {
       filtered = filtered.filter(
         (job) =>
-          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.description.toLowerCase().includes(searchTerm.toLowerCase())
+          job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          job.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          job.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -89,7 +96,7 @@ export default function JobsPage() {
 
     if (filters.location) {
       filtered = filtered.filter((job) =>
-        job.location.toLowerCase().includes(filters.location.toLowerCase())
+        job.location?.toLowerCase().includes(filters.location.toLowerCase())
       );
     }
 
@@ -123,11 +130,13 @@ export default function JobsPage() {
     return colors[type] || "bg-gray-100 text-gray-700 border-gray-300";
   };
 
-  // Pagination
+  // ✅ Pagination with safety checks
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
-  const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
-  const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
+  const currentJobs = Array.isArray(filteredJobs) 
+    ? filteredJobs.slice(indexOfFirstJob, indexOfLastJob)
+    : [];
+  const totalPages = Math.ceil((filteredJobs?.length || 0) / jobsPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 

@@ -85,9 +85,11 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch posts (only 3)
-        const postsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/posts?page=1&limit=3`);
-        const allPosts = postsRes.data.data || [];
+        // ✅ Fetch posts (only 3)
+        const postsRes = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts?page=1&limit=3`
+        );
+        const allPosts = postsRes.data?.data || postsRes.data || [];
 
         const postsWithCounts = await Promise.all(
           allPosts.map(async (post: Post) => {
@@ -113,13 +115,22 @@ export default function HomePage() {
         );
         setPosts(postsWithCounts);
 
-        // Fetch jobs (featured/active jobs)
+        // ✅ Fetch jobs with proper data extraction
         const jobsRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=12`
         );
-        setJobs(jobsRes.data || []);
+        
+        // ✅ Extract data array from paginated response
+        const jobsData = jobsRes.data?.data || jobsRes.data || [];
+        
+        // ✅ Ensure it's an array before setting
+        setJobs(Array.isArray(jobsData) ? jobsData : []);
+        
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching data:', err);
+        // ✅ Set empty arrays on error
+        setPosts([]);
+        setJobs([]);
       } finally {
         setLoading(false);
       }
@@ -127,7 +138,7 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  // Search function with improved logic
+  // ✅ Search function with improved logic and data extraction
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
 
@@ -141,36 +152,44 @@ export default function HomePage() {
     setShowSearchResults(true);
 
     try {
-      // Search jobs
+      // ✅ Search jobs with proper data extraction
       const jobsRes = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/jobs`
       );
       
-      const allJobs = jobsRes.data || [];
-      const filteredJobs = allJobs.filter((job: Job) => {
-        const searchLower = query.toLowerCase();
-        return (
-          job.title?.toLowerCase().includes(searchLower) ||
-          job.company?.toLowerCase().includes(searchLower) ||
-          job.location?.toLowerCase().includes(searchLower) ||
-          job.description?.toLowerCase().includes(searchLower)
-        );
-      }).slice(0, 5);
+      // ✅ Extract data array (handle paginated response)
+      const allJobs = jobsRes.data?.data || jobsRes.data || [];
+      
+      const filteredJobs = (Array.isArray(allJobs) ? allJobs : [])
+        .filter((job: Job) => {
+          const searchLower = query.toLowerCase();
+          return (
+            job.title?.toLowerCase().includes(searchLower) ||
+            job.company?.toLowerCase().includes(searchLower) ||
+            job.location?.toLowerCase().includes(searchLower) ||
+            job.description?.toLowerCase().includes(searchLower)
+          );
+        })
+        .slice(0, 5);
 
-      // Search posts
+      // ✅ Search posts with proper data extraction
       const postsRes = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/posts`
       );
       
-      const allPosts = postsRes.data.data || [];
-      const filteredPosts = allPosts.filter((post: Post) => {
-        const searchLower = query.toLowerCase();
-        return (
-          post.title?.toLowerCase().includes(searchLower) ||
-          stripHtmlAndImages(post.content).toLowerCase().includes(searchLower) ||
-          post.author?.toLowerCase().includes(searchLower)
-        );
-      }).slice(0, 5);
+      // ✅ Extract data array (handle paginated response)
+      const allPosts = postsRes.data?.data || postsRes.data || [];
+      
+      const filteredPosts = (Array.isArray(allPosts) ? allPosts : [])
+        .filter((post: Post) => {
+          const searchLower = query.toLowerCase();
+          return (
+            post.title?.toLowerCase().includes(searchLower) ||
+            stripHtmlAndImages(post.content).toLowerCase().includes(searchLower) ||
+            post.author?.toLowerCase().includes(searchLower)
+          );
+        })
+        .slice(0, 5);
 
       setSearchResults({
         jobs: filteredJobs,
