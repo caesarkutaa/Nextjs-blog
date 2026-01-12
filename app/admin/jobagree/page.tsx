@@ -290,18 +290,18 @@ export default function JobAggregatorPage() {
 
           <div className="flex gap-3 flex-wrap">
             <button onClick={handleFetch} disabled={fetching} className="flex items-center gap-2 px-6 py-3 bg-white text-amber-600 font-semibold rounded-lg hover:bg-amber-50 transition disabled:opacity-50">
-              {fetching ? <> <Loader2 className="animate-spin" size={20} /> Fetching... </> : <> <Zap size={20} /> Fetch Jobs </>}
+              {fetching ? <><Loader2 className="animate-spin" size={20} /> Fetching...</> : <><Zap size={20} /> Fetch Jobs</>}
             </button>
 
             {fetchedJobs.length > 0 && (
               <button onClick={saveJobsToBackend} disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition disabled:opacity-50">
-                {saving ? <> <Loader2 className="animate-spin" size={20} /> Saving {savedCount}/{fetchedJobs.length}... </> : <> <Save size={20} /> Save {fetchedJobs.length} Jobs </>}
+                {saving ? <><Loader2 className="animate-spin" size={20} /> Saving {savedCount}/{fetchedJobs.length}...</> : <><Save size={20} /> Save {fetchedJobs.length} Jobs</>}
               </button>
             )}
 
-            {stats?.totalExternalJobs > 0 && (
+            {(stats?.totalExternalJobs ?? 0) > 0 && (
               <button onClick={deleteAllJobs} disabled={deleting} className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition disabled:opacity-50">
-                {deleting ? <> <Loader2 className="animate-spin" size={20} /> Deleting... </> : <> <Trash2 size={20} /> Delete All </>}
+                {deleting ? <><Loader2 className="animate-spin" size={20} /> Deleting...</> : <><Trash2 size={20} /> Delete All</>}
               </button>
             )}
           </div>
@@ -356,7 +356,7 @@ export default function JobAggregatorPage() {
             </div>
             <div>
               <p className="text-gray-500 text-sm">Source</p>
-              <p className="text-2xl font-bold text-gray-800">Green House</p>
+              <p className="text-2xl font-bold text-gray-800">Greenhouse</p>
             </div>
           </div>
         </motion.div>
@@ -401,7 +401,7 @@ export default function JobAggregatorPage() {
       </div>
 
       {/* Categories Breakdown */}
-      {(stats?.byCategory?.length || 0) > 0 && (
+      {(stats?.byCategory?.length ?? 0) > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -524,7 +524,7 @@ export default function JobAggregatorPage() {
           How to Use
         </h3>
         <ol className="text-amber-700 space-y-2 text-sm list-decimal list-inside">
-          <li>Click <strong>"Fetch Jobs"</strong> to get jobs from Remotive</li>
+          <li>Click <strong>"Fetch Jobs"</strong> to get jobs from Greenhouse (Stripe, Airbnb, Shopify, etc.)</li>
           <li>Review the fetched jobs in the preview section</li>
           <li>Click <strong>"Save Jobs"</strong> to import them to your database</li>
           <li>Duplicates will be automatically skipped</li>
