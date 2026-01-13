@@ -62,17 +62,19 @@ const cleanHtml = (html: string): string =>
 const cleanText = (text: string): string =>
   text?.replace(/[^\w\s-]/g, "").trim() || "";
 
-/* ================= GREENHOUSE CONFIG ================= */
+// Dummy description text for jobs without descriptions
+const DUMMY_DESCRIPTION = "Join our team and be part of an innovative company that values creativity, collaboration, and growth. We offer competitive benefits, flexible work arrangements, and opportunities for professional development.";
 
-const GREENHOUSE_COMPANIES = [
+/* ================= COMPANIES CONFIG ================= */
+
+const COMPANIES = [
   { name: "Stripe", token: "stripe" },
   { name: "Airbnb", token: "airbnb" },
   { name: "Shopify", token: "shopify" },
-  { name: "Coinbase", token: "coinbase" },
   { name: "Dropbox", token: "dropbox" },
 ];
 
-const MAX_JOBS = 24;
+const MAX_JOBS = 50;
 
 /* ================= COMPONENT ================= */
 
@@ -120,33 +122,75 @@ export default function JobAggregatorPage() {
     }
   };
 
-  /* ================= GREENHOUSE FETCH ================= */
+  /* ================= FETCH JOBS WITH DESCRIPTIONS ================= */
 
-  const fetchFromGreenhouse = async (): Promise<ExternalJob[]> => {
-    const allJobs: ExternalJob[] = [];
-
-    // fetch jobs for all companies
-    const companyPromises = GREENHOUSE_COMPANIES.map(async (company) => {
+  const fetchJobs = async (): Promise<ExternalJob[]> => {
+    // Fetch jobs for all companies
+    const companyPromises = COMPANIES.map(async (company) => {
       try {
-        const res = await fetch(
+        // First get the list of jobs
+        const listRes = await fetch(
           `https://boards-api.greenhouse.io/v1/boards/${company.token}/jobs`
         );
-        if (!res.ok) return [];
-        const data = await res.json();
-        return (data.jobs || []).map((job: any) => ({
-          title: cleanText(job.title),
-          company: company.name,
-          description: cleanHtml(job.content),
-          location: job.location?.name || "Remote",
-          type: mapJobType(job.type),
-          category: job.departments?.[0]?.name || "Other",
-          applyUrl: job.absolute_url,
-          source: "Greenhouse",
-          sourceId: `greenhouse-${company.token}-${job.id}`,
-          publishedAt: job.updated_at || new Date().toISOString(),
-        }));
+        if (!listRes.ok) return [];
+        const listData = await listRes.json();
+        
+        // Then fetch each job's details to get the description
+        const jobPromises = (listData.jobs || []).slice(0, 15).map(async (job: any) => {
+          try {
+            // Fetch individual job details for full description
+            const detailRes = await fetch(
+              `https://boards-api.greenhouse.io/v1/boards/${company.token}/jobs/${job.id}`
+            );
+            if (!detailRes.ok) {
+              return {
+                title: cleanText(job.title),
+                company: company.name,
+                description: DUMMY_DESCRIPTION,
+                location: job.location?.name || "Remote",
+                type: mapJobType(job.type),
+                category: job.departments?.[0]?.name || "Other",
+                applyUrl: job.absolute_url,
+                source: company.name,
+                sourceId: `${company.token}-${job.id}`,
+                publishedAt: job.updated_at || new Date().toISOString(),
+              };
+            }
+            
+            const detailData = await detailRes.json();
+            
+            return {
+              title: cleanText(detailData.title || job.title),
+              company: company.name,
+              description: cleanHtml(detailData.content || "") || DUMMY_DESCRIPTION,
+              location: detailData.location?.name || job.location?.name || "Remote",
+              type: mapJobType(detailData.type || job.type),
+              category: detailData.departments?.[0]?.name || job.departments?.[0]?.name || "Other",
+              applyUrl: detailData.absolute_url || job.absolute_url,
+              source: company.name,
+              sourceId: `${company.token}-${job.id}`,
+              publishedAt: detailData.updated_at || job.updated_at || new Date().toISOString(),
+            };
+          } catch (err) {
+            console.error(`Error fetching job details for ${job.title}:`, err);
+            return {
+              title: cleanText(job.title),
+              company: company.name,
+              description: DUMMY_DESCRIPTION,
+              location: job.location?.name || "Remote",
+              type: mapJobType(job.type),
+              category: job.departments?.[0]?.name || "Other",
+              applyUrl: job.absolute_url,
+              source: company.name,
+              sourceId: `${company.token}-${job.id}`,
+              publishedAt: job.updated_at || new Date().toISOString(),
+            };
+          }
+        });
+
+        return Promise.all(jobPromises);
       } catch (err) {
-        console.error(`Greenhouse error (${company.name})`, err);
+        console.error(`Error fetching from ${company.name}:`, err);
         return [];
       }
     });
@@ -160,7 +204,7 @@ export default function JobAggregatorPage() {
       [flatJobs[i], flatJobs[j]] = [flatJobs[j], flatJobs[i]];
     }
 
-    // limit to MAX_JOBS
+    // Limit to MAX_JOBS
     return flatJobs.slice(0, MAX_JOBS);
   };
 
@@ -171,11 +215,11 @@ export default function JobAggregatorPage() {
     setFetchedJobs([]);
     setErrorLog([]);
 
-    const jobs = await fetchFromGreenhouse();
+    const jobs = await fetchJobs();
 
     if (jobs.length) {
       setFetchedJobs(jobs);
-      showToast("success", `Fetched ${jobs.length} jobs`);
+      showToast("success", `Fetched ${jobs.length} jobs from ${COMPANIES.length} companies`);
     } else {
       showToast("error", "No jobs fetched");
     }
@@ -208,6 +252,8 @@ export default function JobAggregatorPage() {
         if (res.ok) {
           saved++;
           setSavedCount(saved);
+        } else if (res.status === 409) {
+          // Duplicate - skip silently
         } else {
           const errData = await res.json().catch(() => ({ message: "Unknown error" }));
           errors.push(`${job.title}: ${errData.message || "Error saving job"}`);
@@ -285,7 +331,7 @@ export default function JobAggregatorPage() {
               <Globe size={32} />
               <h1 className="text-3xl font-bold">Job Aggregator</h1>
             </div>
-            <p className="text-amber-100">Import remote jobs from multiple companies</p>
+            <p className="text-amber-100">Import jobs from Stripe, Airbnb, Shopify & Dropbox</p>
           </div>
 
           <div className="flex gap-3 flex-wrap">
@@ -323,7 +369,6 @@ export default function JobAggregatorPage() {
         </motion.div>
       )}
 
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div
@@ -355,8 +400,8 @@ export default function JobAggregatorPage() {
               <Globe className="text-blue-600" size={24} />
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Source</p>
-              <p className="text-2xl font-bold text-gray-800">Greenhouse</p>
+              <p className="text-gray-500 text-sm">Companies</p>
+              <p className="text-2xl font-bold text-gray-800">{COMPANIES.length}</p>
             </div>
           </div>
         </motion.div>
@@ -399,6 +444,28 @@ export default function JobAggregatorPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Companies List */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-xl shadow-lg p-6"
+      >
+        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Globe size={24} className="text-blue-500" />
+          Source Companies
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          {COMPANIES.map((company) => (
+            <span
+              key={company.token}
+              className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 font-medium rounded-full border border-blue-200"
+            >
+              {company.name}
+            </span>
+          ))}
+        </div>
+      </motion.div>
 
       {/* Categories Breakdown */}
       {(stats?.byCategory?.length ?? 0) > 0 && (
@@ -466,7 +533,7 @@ export default function JobAggregatorPage() {
           
           <div className="p-6 max-h-[500px] overflow-y-auto">
             <div className="space-y-3">
-              {fetchedJobs.slice(0, 20).map((job, index) => (
+              {fetchedJobs.slice(0, 20).map((job) => (
                 <div
                   key={job.sourceId}
                   className="p-4 bg-gray-50 rounded-lg flex justify-between items-start"
@@ -475,22 +542,17 @@ export default function JobAggregatorPage() {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="font-semibold text-gray-800 truncate">{job.title}</h3>
                       <span className="px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700">
-                        {job.source}
+                        {job.company}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">{job.company}</p>
-                    <div className="flex gap-2 mt-2 flex-wrap">
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">{job.description}</p>
+                    <div className="flex gap-2 flex-wrap">
                       <span className="px-2 py-0.5 bg-amber-100 text-amber-600 text-xs font-medium rounded">
                         {job.category}
                       </span>
                       <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded">
                         {job.location}
                       </span>
-                      {job.salary && (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-600 text-xs font-medium rounded">
-                          {job.salary}
-                        </span>
-                      )}
                     </div>
                   </div>
                   <a
@@ -524,7 +586,7 @@ export default function JobAggregatorPage() {
           How to Use
         </h3>
         <ol className="text-amber-700 space-y-2 text-sm list-decimal list-inside">
-          <li>Click <strong>"Fetch Jobs"</strong> to get jobs from Greenhouse (Stripe, Airbnb, Shopify, etc.)</li>
+          <li>Click <strong>"Fetch Jobs"</strong> to get jobs from Stripe, Airbnb, Shopify & Dropbox</li>
           <li>Review the fetched jobs in the preview section</li>
           <li>Click <strong>"Save Jobs"</strong> to import them to your database</li>
           <li>Duplicates will be automatically skipped</li>
