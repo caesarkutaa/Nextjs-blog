@@ -519,21 +519,7 @@ export default function MyApplicationsPage() {
           </div>
 
           {/* Bell */}
-          <button
-            onClick={handleNotificationClick}
-            className="relative flex-shrink-0 p-2 sm:p-2.5 bg-white hover:bg-amber-50 rounded-xl transition-colors shadow-sm border border-gray-100"
-          >
-            <Bell size={18} className="text-gray-600" />
-            {unreadCount > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center"
-              >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </motion.span>
-            )}
-          </button>
+         
         </motion.div>
 
         {/* ── Job Application Stats ── */}
